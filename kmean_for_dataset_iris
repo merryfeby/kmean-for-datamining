@@ -1,0 +1,86 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Fungsi untuk menghitung jarak Euclidean
+def euclidean_distance(point1, point2):
+  return np.sqrt(np.sum((point1 - point2) ** 2))
+
+# Fungsi K-Means
+def k_means(data, k, max_iterations=100, random_seed=42):
+  np.random.seed(random_seed)  # Untuk hasil yang konsisten
+  # Inisialisasi centroid secara acak dari data
+  initial_indices = np.random.choice(len(data), k, replace=False)
+  centroids = data[initial_indices]
+  
+  for iteration in range(max_iterations):
+    # Langkah 1: Tetapkan titik ke cluster terdekat
+    clusters = [[] for _ in range(k)]
+    cluster_labels = []
+    
+    for point in data:
+      distances = [euclidean_distance(point, centroid) for centroid in centroids]
+      cluster_idx = np.argmin(distances)
+      clusters[cluster_idx].append(point)
+      cluster_labels.append(cluster_idx)
+    
+    # Langkah 2: Hitung centroid baru
+    new_centroids = []
+    for cluster in clusters:
+      if cluster:  # Jika cluster tidak kosong
+        new_centroid = np.mean(cluster, axis=0)
+        new_centroids.append(new_centroid)
+      else:  # Jika cluster kosong, gunakan centroid lama
+        new_centroids.append(centroids[len(new_centroids)])
+    
+    new_centroids = np.array(new_centroids)
+    
+    # Periksa konvergensi
+    if np.allclose(centroids, new_centroids, atol=1e-6):
+      print(f"Konvergen pada iterasi {iteration + 1}")
+      break
+    
+    centroids = new_centroids
+  
+  return centroids, cluster_labels
+
+file_path = "Iris.csv" 
+
+# Baca dataset dari file CSV
+df = pd.read_csv(file_path)
+
+# Ambil fitur numerik untuk clustering
+data = df[['SepalLengthCm', 'SepalWidthCm', 'PetalLengthCm', 'PetalWidthCm']].values
+
+# Jalankan K-Means dengan 3 cluster
+k = 3
+centroids, cluster_labels = k_means(data, k)
+
+# Tambahkan label cluster ke dataframe
+df['Cluster'] = cluster_labels
+
+# Tampilkan centroid akhir
+print("\nCentroid akhir:")
+for i, centroid in enumerate(centroids):
+    print(f"Cluster {i+1}: {centroid}")
+
+# Tampilkan beberapa baris hasil
+print("\nHasil clustering (5 baris pertama):")
+print(df[['Id', 'SepalLengthCm', 'SepalWidthCm', 'PetalLengthCm', 'PetalWidthCm', 'Species', 'Cluster']].head())
+
+# Visualisasi (2D: PetalLengthCm vs PetalWidthCm)
+plt.figure(figsize=(10, 6))
+colors = ['r', 'g', 'b']
+for i in range(k):
+  cluster_data = df[df['Cluster'] == i]
+  plt.scatter(cluster_data['PetalLengthCm'], cluster_data['PetalWidthCm'], 
+    c=colors[i], label=f'Cluster {i+1}', alpha=0.6)
+  plt.scatter(centroids[i][2], centroids[i][3], c=colors[i], marker='x', s=200, 
+    linewidths=3, label=f'Centroid {i+1}')
+
+plt.title("Hasil Clustering K-Means (k=3) pada Dataset Iris")
+plt.xlabel("Petal Length (cm)")
+plt.ylabel("Petal Width (cm)")
+plt.legend()
+plt.grid(True)
+plt.show()

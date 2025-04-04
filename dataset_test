@@ -1,0 +1,98 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Data dari dokumen Anda
+data = np.array([
+    [1, 2],  # A
+    [1, 4],  # B
+    [3, 2],  # C
+    [5, 8],  # D
+    [6, 9],  # E
+    [7, 5]   # F
+])
+
+# Label untuk titik
+labels = ['A', 'B', 'C', 'D', 'E', 'F']
+
+# Centroid awal yang ditentukan
+initial_centroids = np.array([
+    [1, 2],  # C1
+    [5, 8],  # C2
+    [7, 5]   # C3
+])
+
+# Fungsi untuk menghitung jarak Euclidean
+def euclidean_distance(point1, point2):
+    return np.sqrt(np.sum((point1 - point2) ** 2))
+
+# Fungsi K-Means dengan centroid awal tertentu
+def k_means(data, initial_centroids, max_iterations=100):
+    centroids = initial_centroids.copy()
+    
+    for iteration in range(max_iterations):
+        # Langkah 1: Tetapkan titik ke cluster terdekat
+        clusters = [[] for _ in range(len(centroids))]
+        cluster_labels = []
+        
+        for i, point in enumerate(data):
+            distances = [euclidean_distance(point, centroid) for centroid in centroids]
+            cluster_idx = np.argmin(distances)
+            clusters[cluster_idx].append(point)
+            cluster_labels.append(cluster_idx)
+        
+        # Langkah 2: Hitung centroid baru
+        new_centroids = []
+        for cluster in clusters:
+            if cluster:  # Jika cluster tidak kosong
+                new_centroid = np.mean(cluster, axis=0)
+                new_centroids.append(new_centroid)
+            else:  # Jika cluster kosong, gunakan centroid lama
+                new_centroids.append(centroids[len(new_centroids)])
+        
+        new_centroids = np.array(new_centroids)
+        
+        # Tampilkan informasi iterasi
+        print(f"\nIterasi {iteration + 1}:")
+        print("Centroid:", new_centroids)
+        print("Penetapan cluster:", [labels[i] + f"->C{cluster_labels[i]+1}" for i in range(len(labels))])
+        
+        # Periksa konvergensi
+        if np.allclose(centroids, new_centroids, atol=1e-6):
+            print("\nKonvergen! Tidak ada perubahan centroid.")
+            break
+        
+        centroids = new_centroids
+    
+    return centroids, cluster_labels
+
+# Jalankan K-Means dengan centroid awal yang ditentukan
+k = 3
+print("Centroid awal:")
+print(initial_centroids)
+centroids, cluster_labels = k_means(data, initial_centroids)
+
+# Tampilkan hasil akhir
+print("\nCentroid akhir:")
+for i, centroid in enumerate(centroids):
+    print(f"Cluster {i+1}: {centroid}")
+
+print("\nPenetapan cluster akhir:")
+for i, label in enumerate(labels):
+    print(f"Titik {label}: Cluster {cluster_labels[i]+1}")
+
+# Visualisasi
+plt.figure(figsize=(8, 6))
+colors = ['r', 'g', 'b']
+for i in range(len(data)):
+    plt.scatter(data[i, 0], data[i, 1], c=colors[cluster_labels[i]], label=labels[i] if i == 0 else "")
+    plt.text(data[i, 0]+0.1, data[i, 1], labels[i], fontsize=12)
+
+for i, centroid in enumerate(centroids):
+    plt.scatter(centroid[0], centroid[1], c=colors[i], marker='x', s=200, linewidths=3, label=f'Centroid {i+1}')
+
+plt.title("Hasil Clustering K-Means (k=3) dengan Centroid Awal Tertentu")
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.legend()
+plt.grid(True)
+plt.show()
